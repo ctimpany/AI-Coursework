@@ -8,7 +8,7 @@ import java.util.Random;
 public class RoundTrip 
 {
 	
-	private static String[] cities;
+	private static String[] cities; //array to hold the cities.
 	private static int[][] distance;
 	private static String originCity = "Edinburgh";
 	
