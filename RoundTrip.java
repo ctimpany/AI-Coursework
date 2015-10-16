@@ -14,8 +14,8 @@ public class RoundTrip
 	private static int[][] distance;
 	private static String originCity = "Edinburgh";
 	
-	private static String[][][] population;
-	private static String[][][] intermediatePopulation;
+	private static String[][] population;
+	private static String[][] intermediatePopulation;
 	private static int bestRoute;
 	private static double bestFitness = 0;
 	
@@ -72,24 +72,22 @@ public class RoundTrip
 			String[] tmpCities = new String [cities.length];
 			System.arraycopy(cities, 0, tmpCities, 0, cities.length);
 			
-			population[i][0][0] = originCity;
-			population[i][0][1] = "0";
+			population[i][0] = originCity;
 			
-			population[i][cities.length][0] = originCity;
+			population[i][cities.length] = originCity;
 			
-			for(int j = 0; j<cities.length; j++)
+			for(int j = 1; j<cities.length; j++)
 			{
-				if(population[i][j+1][0]==null)
+				if(population[i][j]==null)
 				{
 					chromosome = random.nextInt(cities.length);
 					while(tmpCities[chromosome]==null || tmpCities[chromosome].equals(originCity))
 					{
 						chromosome = random.nextInt(cities.length);
 					}
-					population[i][j+1][0] = tmpCities[chromosome];
+					population[i][j] = tmpCities[chromosome];
 					tmpCities[chromosome]=null;
 				}
-				population[i][j+1][1] = calculateDistance(population[i][j+1][0], population[i][j][0]);
 				
 			}
 		}
@@ -115,14 +113,29 @@ public class RoundTrip
 		return Integer.toString(distanceValue);
 	}
 	
+	private static int findCityIndex(String city)
+	{
+		int cityIndex = -1;
+		for(int i = 0; i<cities.length; i++)
+		{
+			if(cities[i].equals(city))
+			{
+				cityIndex=i;
+			}
+		}
+		
+		return cityIndex;
+	}
+	
 	private static void evaluatePopulation()
 	{
+		bestFitness = 0;
 		for(int i = 0; i<MAX_POPULATION; i++)
 		{
 			int totalDistance = 0;
-			for(int j = 0; j<cities.length+1; j++)
+			for(int j = 0; j<cities.length; j++)
 			{
-				totalDistance += Integer.parseInt(population[i][j][1]);
+				totalDistance += Integer.parseInt(calculateDistance(population[i][j+1], population[i][j]));
 				
 			}
 			routeDistance[i] = totalDistance;
@@ -136,52 +149,74 @@ public class RoundTrip
 		}
 	}
 	
+	private static void replaceRepeats(int populationPosition, String[] cityCheckList)
+	{
+		for(int i = 1; i<cities.length; i++)
+		{
+			if(intermediatePopulation[populationPosition][i] == null)
+			{
+				for(int j = 0; j<cities.length; j++)
+				{
+					if(!(cityCheckList[j] == null))
+					{
+						intermediatePopulation[populationPosition][i] = cityCheckList[j];
+						cityCheckList[j] = null;
+					}
+				}
+			}
+		}
+	}
+	
 	private static void generateNewGeneration()
 	{
 		for(int i = 0; i<cities.length+1; i++)
 		{
-			intermediatePopulation[0][i][0] = population[bestRoute][i][0];
-			intermediatePopulation[0][i][1] = population[bestRoute][i][1];
+			intermediatePopulation[0][i] = population[bestRoute][i];
 		}
-		//^^^ This is inserting the best solution from the previous generation into the first slot of the new generation.
 		
-		int parent1, parent2, ratio;
+		int parent1, parent2, ratio, ratioCount;
 		DecimalFormat df = new DecimalFormat("#");
 		
-		ratio = Integer.parseInt(df.format((cities.length+1)*CROSSOVER_RATE)); 
+		ratio = Integer.parseInt(df.format((cities.length-1)*CROSSOVER_RATE));
 		
 		for(int i = 1; i<population.length; i++)
 		{
 			parent1 = rouletteWheel();
 			parent2 = rouletteWheel();
+			
+			String[] tmpCities = new String [cities.length];
+			System.arraycopy(cities, 0, tmpCities, 0, cities.length);
 
-			intermediatePopulation[i][0][0] = originCity;
-			for(int j = 1; j<cities.length+1; j++)
-			{
-				if(j<=ratio)
-				{
-					//parent1 code
-				}else
-				{
-					//parent2 code
-				}
-			}
+			intermediatePopulation[i][0] = originCity;
 			
+			intermediatePopulation[i][cities.length] = originCity;
+			tmpCities[findCityIndex(originCity)] = null;
+			
+			ratioCount = 0;    /**For some reason the ratioCount breaks everything **/
+			
+			for(int j = 1; j<cities.length; j++)
+			{
+				if(intermediatePopulation[i][j]==null)
+				{
+					if(ratioCount<=ratio && tmpCities[findCityIndex(population[parent1][j])] != null)
+					{
+						intermediatePopulation[i][j] = population[parent1][j];
+						tmpCities[findCityIndex(population[parent1][j])] = null;
+						ratioCount++;
+					}else if(tmpCities[findCityIndex(population[parent2][j])] != null)
+					{
+						intermediatePopulation[i][j] = population[parent2][j];
+						tmpCities[findCityIndex(population[parent2][j])] = null;
+					}
+				}				
+			}	
+			
+			//printIntermediatePopulation(false);
+			replaceRepeats(i, tmpCities);
 			childMutation(i);
-			
-			//Calculate the distances between each city.
-			for(int k = 0; k<cities.length+1; k++)
-			{
-				if(k==0)
-				{
-					intermediatePopulation[i][k][1] = "0";
-				}else
-				{
-					intermediatePopulation[i][k][1] = calculateDistance(intermediatePopulation[i][k][0], intermediatePopulation[i][k-1][0]);
-				}
-			}
 		}
 		population = intermediatePopulation;
+		
 	}
 	
 	private static void childMutation(int placeInPopulation)
@@ -189,20 +224,17 @@ public class RoundTrip
 		DecimalFormat df = new DecimalFormat("#");
 		int ratio = Integer.parseInt(df.format((cities.length+1)*MUTATION_RATE));
 		int randInt;
-		String tmpCity, tmpDistance;
+		String tmpCity;
 		
 		for(int i = 0; i<ratio; i++)
 		{
 			randInt = random.nextInt(cities.length-2)+1;
 			
-			tmpCity = intermediatePopulation[placeInPopulation][randInt][0];
-			tmpDistance = intermediatePopulation[placeInPopulation][randInt][1];
+			tmpCity = intermediatePopulation[placeInPopulation][randInt];
 			
-			intermediatePopulation[placeInPopulation][randInt][0] = intermediatePopulation[placeInPopulation][randInt+1][0];
-			intermediatePopulation[placeInPopulation][randInt][1] = intermediatePopulation[placeInPopulation][randInt+1][1];
+			intermediatePopulation[placeInPopulation][randInt] = intermediatePopulation[placeInPopulation][randInt+1];
 			
-			intermediatePopulation[placeInPopulation][randInt+1][0] = tmpCity;
-			intermediatePopulation[placeInPopulation][randInt+1][1] = tmpDistance;
+			intermediatePopulation[placeInPopulation][randInt+1] = tmpCity;
 		}
 	}
 	
@@ -240,21 +272,26 @@ public class RoundTrip
 		
 		createMatrices();
 		
-		population = new String [MAX_POPULATION][cities.length+1][2];
-		intermediatePopulation = new String [MAX_POPULATION][cities.length+1][2];
+		population = new String [MAX_POPULATION][cities.length+1];
+		intermediatePopulation = new String [MAX_POPULATION][cities.length+1];
 		//printDistanceMatrices();
 		
-		initialisePopulation();
-		
-		//printPopulation();
-		
-		evaluatePopulation();
-		
-		printEvaluatedPopulation();
-		
-		generateNewGeneration();
-		
-		evaluatePopulation();
+		while(generation <= MAX_GENERATIONS)
+		{
+			if(generation == 1)
+			{
+				initialisePopulation();
+				evaluatePopulation();
+				printEvaluatedPopulation();
+			}else
+			{
+				generateNewGeneration();
+				evaluatePopulation();
+				printEvaluatedPopulation();
+			}
+			
+			generation++;
+		}
 		
 	}
 	
@@ -286,23 +323,30 @@ public class RoundTrip
 	{
 		for(int i = 0; i<MAX_POPULATION; i++)
 		{
-			System.out.print(population[i][0][0]);
+			System.out.print(population[i][0]);
 			for(int j = 0; j<cities.length; j++)
 			{
-				System.out.print("--(" + population[i][j+1][1] + ")->" + population[i][j+1][0]);
+				System.out.print("--(" + calculateDistance(population[i][j+1], population[i][j]) + ")->" + population[i][j+1]);
 			}
 			System.out.println();
 		}
 	}
 	
-	private static void printIntermediatePopulation()
+	private static void printIntermediatePopulation(boolean distances)
 	{
+		
 		for(int i = 0; i<MAX_POPULATION; i++)
 		{
-			System.out.print(intermediatePopulation[i][0][0]);
+			System.out.print(intermediatePopulation[i][0]);
 			for(int j = 0; j<cities.length; j++)
 			{
-				System.out.print("--(" + intermediatePopulation[i][j+1][1] + ")->" + intermediatePopulation[i][j+1][0]);
+				if(distances == true)
+				{
+					System.out.print("--(" + calculateDistance(intermediatePopulation[i][j+1], intermediatePopulation[i][j]) + ")->" + intermediatePopulation[i][j+1]);
+				}else
+				{
+					System.out.print("-->" + intermediatePopulation[i][j+1]);
+				}
 			}
 			System.out.println();
 		}
@@ -326,13 +370,14 @@ public class RoundTrip
 			{
 				if(j==0)
 				{
-					System.out.print(population[i][j][0]);
+					System.out.print(population[i][j]);
 				}else
 				{
-					System.out.print("-->" + population[i][j][0]);
+					System.out.print("-->" + population[i][j]);
 				}
 			}
 			System.out.println("         Distance: "+ routeDistance[i] +"         Fitness: "+routeFitness[i]);
 		}
+		System.out.println();
 	}
 }
