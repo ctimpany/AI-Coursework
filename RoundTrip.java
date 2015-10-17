@@ -34,10 +34,8 @@ public class RoundTrip
 	 * This method takes in the file containing the distance matrix and converts it into 2 arrays.
 	 * 1 containing the cities, and 1 containing the distances.
 	 */
-	private static void createMatrices()
+	private static void createMatrices() throws IOException
 	{
-		try 
-		{
 			BufferedReader reader = new BufferedReader(new FileReader("../RoundTrip/src/Cities.txt"));
 			String strIn = reader.readLine();
 			cities = strIn.split("\t");
@@ -52,18 +50,11 @@ public class RoundTrip
 					distance[i][j] = Integer.parseInt(tmp[j]);
 				}
 			}
-		} 
-		catch (FileNotFoundException e) 
-		{
-			System.out.println("That file does not exist.");
-			e.printStackTrace();
-		} catch (IOException e) 
-		{
-			System.out.println("This file is empty.");
-			e.printStackTrace();
-		}
 	}
 	
+	/*
+	 * This method creates the initial population for the first generation.
+	 */
 	private static void initialisePopulation()
 	{
 		int chromosome;
@@ -93,6 +84,9 @@ public class RoundTrip
 		}
 	}
 	
+	/*
+	 * This method finds the distance between 2 cities.
+	 */
 	private static String calculateDistance(String to, String from)
 	{
 		int distanceValue;
@@ -113,6 +107,9 @@ public class RoundTrip
 		return Integer.toString(distanceValue);
 	}
 	
+	/*
+	 * This method takes in a cities name and uses it to find it's associated index in the cities array.
+	 */
 	private static int findCityIndex(String city)
 	{
 		int cityIndex = -1;
@@ -127,6 +124,9 @@ public class RoundTrip
 		return cityIndex;
 	}
 	
+	/*
+	 * This method evaluates each member of the population based on route distance and route fitness.
+	 */
 	private static void evaluatePopulation()
 	{
 		bestFitness = 0;
@@ -149,6 +149,11 @@ public class RoundTrip
 		}
 	}
 	
+	/*
+	 * This method replaces any null values in the intermediate population with the first non-null entry from the cityCheckList array.
+	 * null entries in the intermediate population are from when the same city has tried to be entered twice in the route (ignoring the origin city).
+	 * null entries in the cityCheckList array are created when a city has been entered into the route. i.e any city in the route is removed from the cityCheckList leaving only cities which have not been entered.
+	 */
 	private static void replaceRepeats(int populationPosition, String[] cityCheckList)
 	{
 		for(int i = 1; i<cities.length; i++)
@@ -167,6 +172,10 @@ public class RoundTrip
 		}
 	}
 	
+	/*
+	 * This method creates a new generation using members of the previous generation as 'parents' to the members of the new generation.
+	 * The first member of the new generation is the 'best solution' from the previous generation.
+	 */
 	private static void generateNewGeneration()
 	{
 		for(int i = 0; i<cities.length+1; i++)
@@ -176,6 +185,7 @@ public class RoundTrip
 		
 		int parent1, parent2, ratio, ratioCount;
 		DecimalFormat df = new DecimalFormat("#");
+		String[] tmpCities;
 		
 		ratio = Integer.parseInt(df.format((cities.length-1)*CROSSOVER_RATE));
 		
@@ -184,7 +194,7 @@ public class RoundTrip
 			parent1 = rouletteWheel();
 			parent2 = rouletteWheel();
 			
-			String[] tmpCities = new String [cities.length];
+			tmpCities = new String [cities.length];
 			System.arraycopy(cities, 0, tmpCities, 0, cities.length);
 
 			intermediatePopulation[i][0] = originCity;
@@ -198,7 +208,7 @@ public class RoundTrip
 			{
 				if(intermediatePopulation[i][j]==null)
 				{
-					if(ratioCount<=ratio && tmpCities[findCityIndex(population[parent1][j])] != null)
+					if(ratioCount<ratio && tmpCities[findCityIndex(population[parent1][j])] != null)
 					{
 						intermediatePopulation[i][j] = population[parent1][j];
 						tmpCities[findCityIndex(population[parent1][j])] = null;
@@ -210,8 +220,6 @@ public class RoundTrip
 					}
 				}				
 			}	
-			
-			//printIntermediatePopulation(false);
 			replaceRepeats(i, tmpCities);
 			childMutation(i);
 		}
@@ -219,6 +227,9 @@ public class RoundTrip
 		
 	}
 	
+	/*
+	 * This method swaps a number of genes in the child based on the mutation rate specified.
+	 */
 	private static void childMutation(int placeInPopulation)
 	{
 		DecimalFormat df = new DecimalFormat("#");
@@ -238,6 +249,9 @@ public class RoundTrip
 		}
 	}
 	
+	/*
+	 * This method picks a member from the current generation to be a parent of a member in the next generation..
+	 */
 	private static int rouletteWheel()
 	{
 		double totalFitness = 0.0;
@@ -267,7 +281,52 @@ public class RoundTrip
         
 	}
 	
-	public static void main(String [] args)
+	/*
+	 * This method prints out the evaluated population showing details such as:
+	 * -The routes in the population
+	 * -The total distance associated with each of the routes
+	 * -The fitness associated with each of the routes
+	 * 
+	 * And also highlights which member of the population has the best fitness.
+	 */
+	private static void printEvaluatedPopulation()
+	{
+		System.out.println("--------Generation "+generation+"--------");
+	
+		for(int i = 0; i<MAX_POPULATION; i++)
+		{
+			if(i == bestRoute)
+			{
+				System.out.print("Best so far: ");
+			}else
+			{
+				System.out.print("             ");
+			}
+			
+			for(int j = 0; j<cities.length+1; j++)
+			{
+				if(j==0)
+				{
+					System.out.print(population[i][j]);
+				}else
+				{
+					System.out.print("-->" + population[i][j]);
+				}
+			}
+			if(routeDistance[i]>999)
+			{
+				System.out.println("         Distance: "+ routeDistance[i] +"        Fitness: "+routeFitness[i]);
+			}else
+			{
+				System.out.println("         Distance: "+ routeDistance[i] +"         Fitness: "+routeFitness[i]);
+			}
+			
+		}
+		System.out.println();
+	}
+	
+	
+	public static void main(String [] args) throws IOException
 	{
 		
 		createMatrices();
@@ -318,20 +377,28 @@ public class RoundTrip
 			System.out.println();
 		}
 	}
+	
 	//for checking the contents of the population array.
-	private static void printPopulation()
+	private static void printPopulation(boolean distances)
 	{
 		for(int i = 0; i<MAX_POPULATION; i++)
 		{
 			System.out.print(population[i][0]);
 			for(int j = 0; j<cities.length; j++)
 			{
-				System.out.print("--(" + calculateDistance(population[i][j+1], population[i][j]) + ")->" + population[i][j+1]);
+				if(distances == true) //distances = true (include distances between cities in route)
+				{
+					System.out.print("--(" + calculateDistance(population[i][j+1], intermediatePopulation[i][j]) + ")->" + population[i][j+1]);
+				}else
+				{
+					System.out.print("-->" + population[i][j+1]);
+				}
 			}
 			System.out.println();
 		}
 	}
 	
+	//for checking the contents of the intermediatePopulation array.
 	private static void printIntermediatePopulation(boolean distances)
 	{
 		
@@ -340,7 +407,7 @@ public class RoundTrip
 			System.out.print(intermediatePopulation[i][0]);
 			for(int j = 0; j<cities.length; j++)
 			{
-				if(distances == true)
+				if(distances == true) //distances = true (include distances between cities in route)
 				{
 					System.out.print("--(" + calculateDistance(intermediatePopulation[i][j+1], intermediatePopulation[i][j]) + ")->" + intermediatePopulation[i][j+1]);
 				}else
@@ -350,34 +417,5 @@ public class RoundTrip
 			}
 			System.out.println();
 		}
-	}
-	
-	private static void printEvaluatedPopulation()
-	{
-		System.out.println("--------Generation "+generation+"--------");
-	
-		for(int i = 0; i<MAX_POPULATION; i++)
-		{
-			if(i == bestRoute)
-			{
-				System.out.print("Best so far: ");
-			}else
-			{
-				System.out.print("             ");
-			}
-			
-			for(int j = 0; j<cities.length+1; j++)
-			{
-				if(j==0)
-				{
-					System.out.print(population[i][j]);
-				}else
-				{
-					System.out.print("-->" + population[i][j]);
-				}
-			}
-			System.out.println("         Distance: "+ routeDistance[i] +"         Fitness: "+routeFitness[i]);
-		}
-		System.out.println();
 	}
 }
