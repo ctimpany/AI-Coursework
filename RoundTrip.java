@@ -57,7 +57,7 @@ public class RoundTrip
 	 */
 	private static void initialisePopulation()
 	{
-		int chromosome;
+		int cityIndex;
 		for(int i = 0; i<MAX_POPULATION;i++)
 		{
 			String[] tmpCities = new String [cities.length];
@@ -71,13 +71,13 @@ public class RoundTrip
 			{
 				if(population[i][j]==null)
 				{
-					chromosome = random.nextInt(cities.length);
-					while(tmpCities[chromosome]==null || tmpCities[chromosome].equals(originCity))
+					cityIndex = random.nextInt(cities.length);
+					while(tmpCities[cityIndex]==null || tmpCities[cityIndex].equals(originCity))
 					{
-						chromosome = random.nextInt(cities.length);
+						cityIndex = random.nextInt(cities.length);
 					}
-					population[i][j] = tmpCities[chromosome];
-					tmpCities[chromosome]=null;
+					population[i][j] = tmpCities[cityIndex];
+					tmpCities[cityIndex]=null;
 				}
 				
 			}
@@ -187,7 +187,7 @@ public class RoundTrip
 		DecimalFormat df = new DecimalFormat("#");
 		String[] tmpCities;
 		
-		ratio = Integer.parseInt(df.format((cities.length-1)*CROSSOVER_RATE));
+		ratio = Integer.parseInt(df.format((cities.length)*CROSSOVER_RATE));
 		
 		for(int i = 1; i<population.length; i++)
 		{
@@ -202,7 +202,7 @@ public class RoundTrip
 			intermediatePopulation[i][cities.length] = originCity;
 			tmpCities[findCityIndex(originCity)] = null;
 			
-			ratioCount = 0;    /**For some reason the ratioCount breaks everything **/
+			ratioCount = 0;
 			
 			for(int j = 1; j<cities.length; j++)
 			{
