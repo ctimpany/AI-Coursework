@@ -22,7 +22,7 @@ public class RoundTrip
 	private static int generation = 1;
 	private final static int MAX_POPULATION = 10;
 	private final static int MAX_GENERATIONS = 20;
-	private final static double MUTATION_RATE = 0.2; //ratio of how many genes within a child will be swapped. between 0 and 1.
+	private final static double MUTATION_RATE = 0.2; //ratio of how many genes within a child will be swapped.
 	private final static double CROSSOVER_RATE = 0.2; //ratio over which genes from each parent will be distributed within the child. Between 0 and 1.
 	private static Random random = new Random();
 	
@@ -57,7 +57,7 @@ public class RoundTrip
 	 */
 	private static void initialisePopulation()
 	{
-		int cityIndex;
+		int chromosome;
 		for(int i = 0; i<MAX_POPULATION;i++)
 		{
 			String[] tmpCities = new String [cities.length];
@@ -71,13 +71,13 @@ public class RoundTrip
 			{
 				if(population[i][j]==null)
 				{
-					cityIndex = random.nextInt(cities.length);
-					while(tmpCities[cityIndex]==null || tmpCities[cityIndex].equals(originCity))
+					chromosome = random.nextInt(cities.length);
+					while(tmpCities[chromosome]==null || tmpCities[chromosome].equals(originCity))
 					{
-						cityIndex = random.nextInt(cities.length);
+						chromosome = random.nextInt(cities.length);
 					}
-					population[i][j] = tmpCities[cityIndex];
-					tmpCities[cityIndex]=null;
+					population[i][j] = tmpCities[chromosome];
+					tmpCities[chromosome]=null;
 				}
 				
 			}
@@ -150,22 +150,36 @@ public class RoundTrip
 	}
 	
 	/*
-	 * This method replaces any null values in the intermediate population with the first non-null entry from the cityCheckList array.
-	 * null entries in the intermediate population are from when the same city has tried to be entered twice in the route (ignoring the origin city).
-	 * null entries in the cityCheckList array are created when a city has been entered into the route. i.e any city in the route is removed from the cityCheckList leaving only cities which have not been entered.
+	 * This method replaces any repeating cities in the intermediate population child (ignoring originCity)
 	 */
-	private static void replaceRepeats(int populationPosition, String[] cityCheckList)
+	private static void replaceRepeats(int populationPosition)
 	{
+		String[] tmpCities = new String [cities.length];
+		System.arraycopy(cities, 0, tmpCities, 0, cities.length);
+		tmpCities[findCityIndex(originCity)] = null;
+		
 		for(int i = 1; i<cities.length; i++)
+		{
+			if(tmpCities[findCityIndex(intermediatePopulation[populationPosition][i])] == null)
+			{
+				intermediatePopulation[populationPosition][i] = null;
+			}else
+			{
+				tmpCities[findCityIndex(intermediatePopulation[populationPosition][i])] = null;
+			}
+		}
+		
+		for(int i = cities.length-1; i>0; i--)
 		{
 			if(intermediatePopulation[populationPosition][i] == null)
 			{
 				for(int j = 0; j<cities.length; j++)
 				{
-					if(!(cityCheckList[j] == null))
+					if(!(tmpCities[j] == null))
 					{
-						intermediatePopulation[populationPosition][i] = cityCheckList[j];
-						cityCheckList[j] = null;
+						intermediatePopulation[populationPosition][i] = tmpCities[j];
+						tmpCities[j] = null;
+						j=cities.length;
 					}
 				}
 			}
@@ -183,44 +197,30 @@ public class RoundTrip
 			intermediatePopulation[0][i] = population[bestRoute][i];
 		}
 		
-		int parent1, parent2, ratio, ratioCount;
+		int parent1, parent2, ratio;
 		DecimalFormat df = new DecimalFormat("#");
-		String[] tmpCities;
 		
-		ratio = Integer.parseInt(df.format((cities.length)*CROSSOVER_RATE));
+		ratio = Integer.parseInt(df.format((cities.length-1)*CROSSOVER_RATE));
 		
 		for(int i = 1; i<population.length; i++)
 		{
 			parent1 = rouletteWheel();
 			parent2 = rouletteWheel();
-			
-			tmpCities = new String [cities.length];
-			System.arraycopy(cities, 0, tmpCities, 0, cities.length);
 
 			intermediatePopulation[i][0] = originCity;
-			
 			intermediatePopulation[i][cities.length] = originCity;
-			tmpCities[findCityIndex(originCity)] = null;
-			
-			ratioCount = 0;
 			
 			for(int j = 1; j<cities.length; j++)
 			{
-				if(intermediatePopulation[i][j]==null)
-				{
-					if(ratioCount<ratio && tmpCities[findCityIndex(population[parent1][j])] != null)
+					if(j<ratio)
 					{
 						intermediatePopulation[i][j] = population[parent1][j];
-						tmpCities[findCityIndex(population[parent1][j])] = null;
-						ratioCount++;
-					}else if(tmpCities[findCityIndex(population[parent2][j])] != null)
+					}else
 					{
 						intermediatePopulation[i][j] = population[parent2][j];
-						tmpCities[findCityIndex(population[parent2][j])] = null;
-					}
-				}				
+					}			
 			}	
-			replaceRepeats(i, tmpCities);
+			replaceRepeats(i);
 			childMutation(i);
 		}
 		population = intermediatePopulation;
@@ -333,7 +333,6 @@ public class RoundTrip
 		
 		population = new String [MAX_POPULATION][cities.length+1];
 		intermediatePopulation = new String [MAX_POPULATION][cities.length+1];
-		//printDistanceMatrices();
 		
 		while(generation <= MAX_GENERATIONS)
 		{
@@ -348,7 +347,6 @@ public class RoundTrip
 				evaluatePopulation();
 				printEvaluatedPopulation();
 			}
-			
 			generation++;
 		}
 		
