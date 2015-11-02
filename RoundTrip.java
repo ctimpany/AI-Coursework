@@ -18,9 +18,11 @@ public class RoundTrip
 	private static String[][] intermediatePopulation;
 	private static int bestRoute;
 	private static double bestFitness = 0;
+	private static int bestGen = 0;
+	private static int bestDistance = 0;
 	
 	private static int generation = 1;
-	private final static int MAX_POPULATION = 30;
+	private final static int MAX_POPULATION = 40;
 	private final static int MAX_GENERATIONS = 30;
 	private final static double MUTATION_RATE = 0.8; //ratio of how many genes within a child will be swapped.
 	private final static double CROSSOVER_RATE = 0.5; //ratio over which genes from each parent will be distributed within the child. Between 0 and 1.
@@ -145,6 +147,12 @@ public class RoundTrip
 			{
 				bestFitness = routeFitness[i];
 				bestRoute = i;
+				
+				if(totalDistance < bestDistance || bestDistance == 0)
+				{
+					bestGen = generation;
+					bestDistance = totalDistance;
+				}
 			}
 		}
 	}
@@ -325,6 +333,23 @@ public class RoundTrip
 		System.out.println();
 	}
 	
+	//Prints out the best route in the current population
+	public static void printBestRoute()
+	{
+		System.out.print("Best Route Found: ");
+		for(int i = 0; i<cities.length+1; i++)
+		{
+			if(i==0)
+			{
+				System.out.print(population[bestRoute][i]);
+			}else
+			{
+				System.out.print("-->" + population[bestRoute][i]);
+			}
+		}
+		System.out.println("\nDistance: " + bestDistance);
+		System.out.println("Gen's to find: " + bestGen);
+	}
 	
 	public static void main(String [] args) throws IOException
 	{
@@ -350,6 +375,7 @@ public class RoundTrip
 			generation++;
 		}
 		
+		printBestRoute();
 	}
 	
 	
