@@ -20,10 +20,10 @@ public class RoundTrip
 	private static int bestDistance = 0;
 	
 	private static int generation = 1;
-	private final static int MAX_POPULATION = 40;
+	private final static int MAX_POPULATION = 25;
 	private final static int MAX_GENERATIONS = 30;
-	private final static double MUTATION_RATE = 0.4; //ratio of how many genes within a child will be swapped.
-	private final static double CROSSOVER_RATE = 0.5; //ratio over which genes from each parent will be distributed within the child. Between 0 and 1.
+	private final static double MUTATION_RATE = 0.2; //ratio of how many genes within a child will be swapped.
+	private final static double CROSSOVER_RATE = 0.3; //ratio over which genes from each parent will be distributed within the child. Between 0 and 1.
 	private static Random random = new Random();
 	
 	private static double[][] rouletteWheel = new double[MAX_POPULATION][2];
