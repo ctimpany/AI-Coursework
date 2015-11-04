@@ -1,9 +1,7 @@
 import java.io.BufferedReader;
-import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.text.DecimalFormat;
-import java.util.ArrayList;
 import java.util.Random;
 
 
@@ -24,7 +22,7 @@ public class RoundTrip
 	private static int generation = 1;
 	private final static int MAX_POPULATION = 40;
 	private final static int MAX_GENERATIONS = 30;
-	private final static double MUTATION_RATE = 0.8; //ratio of how many genes within a child will be swapped.
+	private final static double MUTATION_RATE = 0.4; //ratio of how many genes within a child will be swapped.
 	private final static double CROSSOVER_RATE = 0.5; //ratio over which genes from each parent will be distributed within the child. Between 0 and 1.
 	private static Random random = new Random();
 	
@@ -214,6 +212,10 @@ public class RoundTrip
 		{
 			parent1 = rouletteWheel();
 			parent2 = rouletteWheel();
+			while (parent2 == parent1)
+			{
+				parent2 = rouletteWheel();
+			}
 
 			intermediatePopulation[i][0] = originCity;
 			intermediatePopulation[i][cities.length] = originCity;
